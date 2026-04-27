@@ -1,0 +1,36 @@
+{
+  "author": "Joel Zamble",
+  "github_id": "zamble",
+  "name": "Zamble ParamGolf Stack: SP8192 Legal TTT Base + Measured Ablations",
+  "date": "2026-04-27",
+  "track": "10min_16mb",
+  "status": "local_scaffold_pending_cloud_validation",
+  "base_record": "records/track_10min_16mb/2026-04-09_SP8192_3LayerRecur_ParResid_QK525_LegalTTT",
+  "val_bpb": null,
+  "val_bpb_std": null,
+  "seeds": [],
+  "seed_results": {},
+  "hardware": "pending cloud measurement",
+  "pytorch_version": "pending cloud measurement",
+  "technique_summary": "Unmodified 2026-04-09 legal SP8192/QK5.25/3-layer recurrence/parallel residual/score-first TTT base scaffold. Candidate ablations are documented in notes.md and must be measured on 1xH100 before stacking.",
+  "compliance": {
+    "train_under_600s": null,
+    "artifact_under_16mb": null,
+    "eval_under_600s": null,
+    "no_slot": true,
+    "no_pre_quant_ttt": true,
+    "no_etlb": true,
+    "no_ngram_cache": true,
+    "score_first_ttt": true,
+    "three_seeds": false,
+    "cloud_validated": false
+  },
+  "attribution": {
+    "base_stack": "@bigbag 2026-04-09 record",
+    "sp8192_gptq_sdclip": "@clarkkev",
+    "depth_recurrence": "@dexhunter, @msisovic",
+    "parallel_residuals": "@Robby955, @msisovic",
+    "legal_ttt_framework": "@abaybektursun, @Christopher-Lee-McClendon",
+    "hyperparameter_tuning": "@X-Abhishek-X"
+  }
+}
