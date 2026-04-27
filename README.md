@@ -63,6 +63,21 @@ Happy training!
 | fp16 Embed | 1.2197 | Renier Velazco | FP16 Tied Embedding + LR/Warmdown Tuning | 2026-03-18 | [info](records/track_10min_16mb/2026-03-18_FP16Embed_WD3600/README.md) |
 | Naive Baseline | 1.2244 | Baseline | 9layer 512dim 1024vocab TiedEmbeddings 4 KV heads | 2026-03-18 | [info](records/track_10min_16mb/2026-03-17_NaiveBaseline/README.md) |
 
+#### Leaderboard Comparison
+
+The leaderboard has improved by **0.1434 bpb** from the naive baseline to the current best record. The largest gains have come from a few repeatable themes:
+
+| Stage | Representative Run | Score | Gain vs. Previous Stage | What Changed |
+|-------|--------------------|------:|-------------------------:|--------------|
+| Baseline | Naive Baseline | 1.2244 | - | 9-layer tied-embedding GPT with the starter tokenizer and training recipe |
+| Longer context and tuned training | 4k seq length | 1.2014 | 0.0230 | Higher sequence length, better hyperparameters, and stronger evaluation setup |
+| Quantization and wider MLPs | 11L MLP3x + Int6 QAT | 1.1502 | 0.0512 | Larger effective model under the 16MB cap through aggressive quantization |
+| Test-time and optimizer advances | LeakyReLU² + Legal Score-First TTT + Parallel Muon | 1.1194 | 0.0308 | Legal TTT, activation changes, and stronger optimizer behavior |
+| Recurrence and residual topology | Parallel Residuals + Mini Depth Recurrence | 1.1063 | 0.0131 | Reused depth, parallel residual lanes, and GPTQ calibration improvements |
+| SP8192 frontier | SP8192 + 3-Layer Recurrence + Parallel Residuals + Legal TTT | 1.0810 | 0.0253 | Larger tokenizer, recurrence, parallel residuals, GPTQ embeddings, QK gain, and legal score-first TTT |
+
+Use this as a map, not a recipe. Strong submissions usually combine one architectural idea, one compression idea, and one measurement discipline improvement rather than only tuning a single knob.
+
 #### Unlimited Compute Leaderboard & Non-record Submissions
 
 | Run | Score | Author | Summary | Date | Info |
@@ -70,20 +85,26 @@ Happy training!
 | 1 Bit Quantization | 1.1239 | Ciprian-Florin Ifrim | 106M params quantized to 1 bit + misc arch changes + 2hr training | 2026-03-24 | [info](records/track_non_record_16mb/2026-03-24_106M_Binary_Asymmetric_UNet_FP8_15L_8192BPE_YaRN_NeoMuon_Smear/README.md) |
 | 4-Hour Baseline | 1.2074 | Will DePue | Testing unlimited compute, 4 hours on 8xH100 | 2026-03-18 | [info](records/track_non_record_16mb/2026-03-18_Quasi10Bfrom50B_SP1024_9x512_KV4_4h_pgut3/README.md) |
 
-#### Requests for PRs
+#### Innovation Phase
 
 Breakthrough ideas are rarely immediately state-of-the-art, instead, they're developed slowly, first demonstrating signs-of-life, iterated on, then only ultimately optimized on the systems side. Don't get discouraged if a new algorithm doesn't instantly beat the best leaderboard run or even the naive baseline. If you have an idea you believe in, consider ignoring step times early on: once you prove you can beat the baseline in the same # of steps you can then start focusing on how to also make it fast.
 
 We'd love to see weird & creative ideas in the challenge, since you never know what may work in the end. Most likely, these will be a good fit in our unlimited compute leaderboard as non-record submissions. We have some requests for what we'd love to see people implement:
+
+Good innovation-phase PRs should answer three questions:
+
+1. **Signal:** What improves, even if the run is not leaderboard-ready yet?
+2. **Cost:** What does the idea spend: parameters, code bytes, wallclock, evaluation time, or implementation complexity?
+3. **Path:** What is the next bottleneck between the signs-of-life result and a competitive record?
 
 - [x] 1-bit quantization - [implementation](records/track_non_record_16mb/2026-03-24_106M_Binary_Asymmetric_UNet_FP8_15L_8192BPE_YaRN_NeoMuon_Smear/README.md)
 - [x] Ternary quantization - [implementation](records/track_10min_16mb/2026-03-24_74M_Ternary_UNet_FP8_10L_8192BPE_YaRN_NeoMuon/README.md)
 - [ ] JEPA
 - [ ] Text diffusion
 - [ ] H-net tokenization
-- [ ] Universal transformer - [We have lots of depth recurrence submissions, but I'd love to see one 4 hour
+- [ ] Universal transformer - We have lots of depth recurrence submissions, but we'd love to see a focused long-run implementation
 - [ ] Megakernels
-- [ ] State-space models, E2E TTT, super long context for evaluation or training 
+- [ ] State-space models, E2E TTT, super long context for evaluation or training
 - [ ] Learning adapters on random linear maps
 
 ## Getting Started
