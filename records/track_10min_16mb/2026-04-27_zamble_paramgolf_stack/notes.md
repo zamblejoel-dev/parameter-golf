@@ -11,6 +11,60 @@ Not performance-validated. Not leaderboard-ready.
 Do not modify `train_gpt.py` and do not begin ablations until the unmodified base
 finishes a real 1xH100 run with BPB, artifact bytes, wallclock, and log output.
 
+## Phase 4 Status
+
+Phase 4 remains pending.
+
+Any prior attempted execution outside a real H100/CUDA runner is invalid and must
+not be treated as a Phase 4 result. Non-H100/container failures, missing
+`torchrun`, incomplete checkouts, blocked network clones, or CPU-only torch
+environments do not produce submission artifacts.
+
+No real Phase 4 metrics exist yet:
+
+- val_bpb: none
+- val_loss: none
+- compressed artifact bytes: none
+- train wallclock: none
+- eval wallclock: none
+- valid `train_h100_debug_seed0.log`: none
+
+Next required action: run the frozen unmodified base on an actual 1xH100 CUDA
+machine after the environment gate passes.
+
+## Cloud Environment Gate
+
+Before Phase 4, verify the cloud machine:
+
+```bash
+nvidia-smi
+
+python3 - <<'PY'
+import torch
+print("torch", torch.__version__)
+print("cuda_available", torch.cuda.is_available())
+print("device_count", torch.cuda.device_count())
+if torch.cuda.is_available():
+    print("device", torch.cuda.get_device_name(0))
+PY
+
+which torchrun
+```
+
+Stop immediately if CUDA is unavailable, no H100/GPU is present, torch fails to
+import, `torchrun` is missing, or the parameter-golf checkout is incomplete.
+
+## Cloud 4-Agent Workflow
+
+- Agent 1, Environment Gate: run the checks above and stop if any required
+  condition fails.
+- Agent 2, Runner: if the gate passes, run only the frozen Phase 4 command.
+- Agent 3, Log Analyst: extract completion status, GPU, CUDA/PyTorch,
+  `val_bpb`, `val_loss`, compressed artifact bytes, wallclock, warnings/errors,
+  and artifact-under-16MB status.
+- Agent 4, Notes/Package: update `notes.md` only after real H100 metrics exist
+  and keep only valid H100 logs as submission artifacts.
+
 ## Top Run Comparison
 
 | Rank | Record | BPB | Artifact | Context / vocab | Depth / width | Optimizer | Quantization | Eval method | Wallclock | Unique trick | Legality |
