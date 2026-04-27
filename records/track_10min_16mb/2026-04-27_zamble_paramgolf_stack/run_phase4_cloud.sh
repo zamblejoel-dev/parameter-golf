@@ -5,6 +5,10 @@ set -euo pipefail
 # Run from the repo root on a real CUDA/H100 cloud machine:
 #   bash records/track_10min_16mb/2026-04-27_zamble_paramgolf_stack/run_phase4_cloud.sh
 #
+# Default is 1 GPU for Phase 4 debug. If the cloud allocation must be used as
+# a full 8xH100 run, call with:
+#   PHASE4_NPROC_PER_NODE=8 bash records/track_10min_16mb/2026-04-27_zamble_paramgolf_stack/run_phase4_cloud.sh
+#
 # This script does not edit train_gpt.py and does not run ablations.
 # It fails loudly if preflight checks fail or required metric categories
 # are absent from the produced log. Exact metric values must be read from
@@ -13,10 +17,17 @@ set -euo pipefail
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 CANDIDATE_DIR="$REPO_ROOT/records/track_10min_16mb/2026-04-27_zamble_paramgolf_stack"
 LOG_FILE="$CANDIDATE_DIR/train_h100_debug_seed0.log"
+NPROC_PER_NODE="${PHASE4_NPROC_PER_NODE:-1}"
 
 cd "$REPO_ROOT"
 
 echo "[phase4] repo root: $REPO_ROOT"
+echo "[phase4] nproc_per_node: $NPROC_PER_NODE"
+
+if ! [[ "$NPROC_PER_NODE" =~ ^[1-9][0-9]*$ ]]; then
+  echo "[phase4][fatal] PHASE4_NPROC_PER_NODE must be a positive integer; got '$NPROC_PER_NODE'." >&2
+  exit 8
+fi
 
 if [[ ! -d "$CANDIDATE_DIR" ]]; then
   echo "[phase4][fatal] Missing candidate directory: $CANDIDATE_DIR" >&2
@@ -38,7 +49,8 @@ if ! command -v torchrun >/dev/null 2>&1; then
   exit 11
 fi
 
-python3 - <<'PY'
+PHASE4_NPROC_PER_NODE="$NPROC_PER_NODE" python3 - <<'PY'
+import os
 import sys
 
 try:
@@ -56,6 +68,15 @@ print(f"[phase4] cuda_available={torch.cuda.is_available()}")
 print(f"[phase4] cuda_device_count={torch.cuda.device_count()}")
 if torch.cuda.device_count() > 0:
     print(f"[phase4] cuda_device_0={torch.cuda.get_device_name(0)}")
+
+nproc = int(os.environ["PHASE4_NPROC_PER_NODE"])
+if torch.cuda.device_count() < nproc:
+    print(
+        f"[phase4][fatal] Requested nproc_per_node={nproc}, "
+        f"but only {torch.cuda.device_count()} CUDA device(s) are visible.",
+        file=sys.stderr,
+    )
+    raise SystemExit(14)
 PY
 
 if command -v nvidia-smi >/dev/null 2>&1; then
@@ -73,7 +94,7 @@ cd "$CANDIDATE_DIR"
 RUN_ID=h100_debug_seed0 \
 SEED=0 \
 MAX_WALLCLOCK_SECONDS=600 \
-torchrun --standalone --nproc_per_node=1 train_gpt.py | tee "$LOG_FILE"
+torchrun --standalone --nproc_per_node="$NPROC_PER_NODE" train_gpt.py | tee "$LOG_FILE"
 
 echo "[phase4] Validating required metrics in $LOG_FILE"
 
