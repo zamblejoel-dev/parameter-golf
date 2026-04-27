@@ -4,7 +4,7 @@
   "name": "Zamble ParamGolf Stack: SP8192 Legal TTT Base + Measured Ablations",
   "date": "2026-04-27",
   "track": "10min_16mb",
-  "status": "local_scaffold_pending_cloud_validation",
+  "status": "local_scaffold_complete_pending_unmodified_1xh100_debug",
   "base_record": "records/track_10min_16mb/2026-04-09_SP8192_3LayerRecur_ParResid_QK525_LegalTTT",
   "val_bpb": null,
   "val_bpb_std": null,
@@ -12,7 +12,7 @@
   "seed_results": {},
   "hardware": "pending cloud measurement",
   "pytorch_version": "pending cloud measurement",
-  "technique_summary": "Unmodified 2026-04-09 legal SP8192/QK5.25/3-layer recurrence/parallel residual/score-first TTT base scaffold. Candidate ablations are documented in notes.md and must be measured on 1xH100 before stacking.",
+  "technique_summary": "Unmodified 2026-04-09 legal SP8192/QK5.25/3-layer recurrence/parallel residual/score-first TTT base scaffold. No performance claim yet; first required gate is a 1xH100 debug run of the copied base.",
   "compliance": {
     "train_under_600s": null,
     "artifact_under_16mb": null,

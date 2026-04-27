@@ -5,6 +5,12 @@ Date: 2026-04-27
 Local role: compare, scaffold, compile, tiny smoke, package.
 Cloud role: CUDA debug, ablations, BPB measurement, final 8xH100 logs.
 
+True status: local scaffold complete, base chosen, ready for 1xH100 cloud debug.
+Not performance-validated. Not leaderboard-ready.
+
+Do not modify `train_gpt.py` and do not begin ablations until the unmodified base
+finishes a real 1xH100 run with BPB, artifact bytes, wallclock, and log output.
+
 ## Top Run Comparison
 
 | Rank | Record | BPB | Artifact | Context / vocab | Depth / width | Optimizer | Quantization | Eval method | Wallclock | Unique trick | Legality |
@@ -68,9 +74,28 @@ Reason: it is the strongest inspected legal public record, combines the best SP8
 Base cloud debug:
 
 ```bash
-RUN_ID=h100_debug_seed0 SEED=0 MAX_WALLCLOCK_SECONDS=600 QK_GAIN_INIT=5.25 TTT_ENABLED=1 TTT_LR=0.005 TTT_EPOCHS=3 \
+python3 data/cached_challenge_fineweb.py --variant sp8192
+
+cd records/track_10min_16mb/2026-04-27_zamble_paramgolf_stack
+
+RUN_ID=h100_debug_seed0 \
+SEED=0 \
+MAX_WALLCLOCK_SECONDS=600 \
 torchrun --standalone --nproc_per_node=1 train_gpt.py | tee train_h100_debug_seed0.log
 ```
+
+Report after Phase 4:
+
+- completed: pending
+- val_bpb: pending
+- val_loss: pending
+- compressed artifact bytes: pending
+- train wallclock: pending
+- eval wallclock: pending
+- CUDA/GPU used: pending
+- warnings/errors: pending
+- artifact under 16,000,000 bytes: pending
+- README/notes command corrections needed: pending
 
 Base 8xH100:
 
@@ -92,6 +117,8 @@ The critical size path is `gptq_mixed_quantize` -> byte shuffle -> Brotli-11 -> 
 
 ## Ablation A1: Per-Group SDClip Allocation
 
+Blocked until Phase 4 base debug completes.
+
 - Hypothesis: Stable group-level Hessian traces can allocate slightly wider/narrower SDClip thresholds by layer group, reducing quantization error without increasing compressed bytes.
 - Expected BPB gain: 0.0002-0.0006 if tuned conservatively.
 - Implementation risk: medium; touching quantization can silently blow artifact size.
@@ -104,6 +131,8 @@ The critical size path is `gptq_mixed_quantize` -> byte shuffle -> Brotli-11 -> 
 
 ## Ablation A2: TTT Freeze Schedule
 
+Blocked until Phase 4 base debug completes.
+
 - Hypothesis: Updating fewer tensors during score-first TTT may keep most of the adaptation gain while reducing eval time and overfit risk.
 - Expected BPB gain: -0.0002 to +0.0004; speed improvement may still justify keeping.
 - Implementation risk: medium; parameter filtering must be explicit and logged.
@@ -115,6 +144,8 @@ The critical size path is `gptq_mixed_quantize` -> byte shuffle -> Brotli-11 -> 
 - Cloud measurement command: `RUN_ID=a2_ttt_freeze_seed0 SEED=0 TTT_ENABLED=1 torchrun --standalone --nproc_per_node=1 train_gpt.py | tee train_a2_ttt_freeze_seed0.log`.
 
 ## Ablation A3: QK Gain Micro-Sweep
+
+Blocked until Phase 4 base debug completes.
 
 - Hypothesis: 5.25 is near optimum but 5.10 or 5.40 may improve one-seed debug enough to justify 3-seed testing.
 - Expected BPB gain: 0.0001-0.0004.
@@ -136,14 +167,21 @@ The critical size path is `gptq_mixed_quantize` -> byte shuffle -> Brotli-11 -> 
 - [x] Artifact-size logic identified.
 - [x] Exact cloud debug command prepared.
 - [x] Tiny smoke decision recorded: skipped locally because CUDA is unavailable.
+- [x] Leaderboard readiness explicitly denied until cloud validation.
 
 ## Cloud Acceptance Checklist
 
 - [ ] 1xH100 debug has no crash.
 - [ ] Final BPB prints.
+- [ ] Final val_loss prints.
 - [ ] Compressed artifact size prints.
-- [ ] Wallclock is known.
-- [ ] Logs are saved.
+- [ ] Train wallclock is known.
+- [ ] Eval wallclock is known.
+- [ ] CUDA/GPU used is recorded.
+- [ ] Warnings/errors are summarized.
+- [ ] Artifact under 16,000,000 bytes is checked.
+- [ ] README/notes command corrections are applied if needed.
+- [ ] `train_h100_debug_seed0.log` is saved in this record folder.
 - [ ] 8xH100 run only after 1xH100 passes.
 - [ ] Three final seeds complete.
 - [ ] README and submission metadata updated with real results.

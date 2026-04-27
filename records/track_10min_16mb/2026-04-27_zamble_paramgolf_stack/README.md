@@ -1,11 +1,12 @@
 # Zamble Parameter Golf Stack
 
-Local scaffold for a leaderboard-valid OpenAI Parameter Golf attempt.
+Local scaffold and intelligence package for an OpenAI Parameter Golf attempt.
 
 This folder intentionally starts from the strongest inspected legal public stack:
 `2026-04-09_SP8192_3LayerRecur_ParResid_QK525_LegalTTT`.
 
-Local results are only structural checks. Leaderboard claims require cloud runs on H100s.
+This is not a leaderboard-ready result yet. Local results only prove code structure.
+Cloud H100 runs must prove BPB, artifact size, wallclock, and reproducibility.
 
 ## Base Stack
 
@@ -45,16 +46,17 @@ If CUDA is unavailable locally, skip smoke. Do not report local smoke as BPB evi
 
 ## Cloud Debug
 
+Phase 4 must reproduce the unmodified base before any ablations.
+
 ```bash
 cd /workspace
 git clone https://github.com/openai/parameter-golf.git
 cd parameter-golf
-git checkout -b zamble-paramgolf-attempt
+git checkout codex/zamble-paramgolf-attempt
 
 # copy this folder into:
 # records/track_10min_16mb/2026-04-27_zamble_paramgolf_stack/
 
-MATCHED_FINEWEB_REPO_ID=kevclark/parameter-golf \
 python3 data/cached_challenge_fineweb.py --variant sp8192
 
 cd records/track_10min_16mb/2026-04-27_zamble_paramgolf_stack
@@ -62,12 +64,11 @@ cd records/track_10min_16mb/2026-04-27_zamble_paramgolf_stack
 RUN_ID=h100_debug_seed0 \
 SEED=0 \
 MAX_WALLCLOCK_SECONDS=600 \
-QK_GAIN_INIT=5.25 \
-TTT_ENABLED=1 \
-TTT_LR=0.005 \
-TTT_EPOCHS=3 \
 torchrun --standalone --nproc_per_node=1 train_gpt.py | tee train_h100_debug_seed0.log
 ```
+
+After the run, keep `train_h100_debug_seed0.log` in this folder and update `notes.md`
+with real metrics. Do not start ablations until this run completes.
 
 ## Cloud Record Runs
 
@@ -87,7 +88,12 @@ torchrun --standalone --nproc_per_node=8 train_gpt.py | tee train_seed1234.log
 ## Status
 
 - Local scaffold: complete
+- Base chosen: complete
 - Local compile: passed on 2026-04-27
 - Tiny smoke: skipped locally because CUDA is unavailable
+- BPB: pending cloud measurement
+- Artifact-size output from actual run: pending cloud measurement
 - 1xH100 debug: pending
+- Measured improvement over base: none yet
 - 8xH100 record logs: pending
+- Submission-ready result: no
