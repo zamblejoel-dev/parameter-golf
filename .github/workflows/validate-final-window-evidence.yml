@@ -1,0 +1,76 @@
+name: Validate final-window evidence
+
+on:
+  pull_request:
+    paths:
+      - 'records/track_10min_16mb/2026-04-29_zamble_final_window_probe/**'
+      - 'records/track_10min_16mb/2026-04-09_SP8192_3LayerRecur_ParResid_QK525_LegalTTT/fresh_h100_seed*.log'
+      - '.github/workflows/validate-final-window-evidence.yml'
+  workflow_dispatch:
+
+jobs:
+  validate-evidence:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Show evidence tree
+        run: |
+          set -euxo pipefail
+          find records/track_10min_16mb/2026-04-29_zamble_final_window_probe -maxdepth 1 -type f -print | sort || true
+          find records/track_10min_16mb/2026-04-09_SP8192_3LayerRecur_ParResid_QK525_LegalTTT -maxdepth 1 -name 'fresh_h100_seed*.log' -type f -print | sort || true
+
+      - name: Validate parser syntax
+        run: |
+          set -euxo pipefail
+          python3 -m py_compile records/track_10min_16mb/2026-04-29_zamble_final_window_probe/parse_h100_debug.py
+          python3 -m py_compile records/track_10min_16mb/2026-04-29_zamble_final_window_probe/parse_prior_candidate.py
+
+      - name: Validate committed prior-candidate evidence if present
+        run: |
+          set -euo pipefail
+          STATUS_JSON="records/track_10min_16mb/2026-04-29_zamble_final_window_probe/prior_candidate_h100_status.json"
+          FINAL_STATUS="records/track_10min_16mb/2026-04-29_zamble_final_window_probe/final_window_evidence_status.txt"
+          CANDIDATE_DIR="records/track_10min_16mb/2026-04-09_SP8192_3LayerRecur_ParResid_QK525_LegalTTT"
+
+          if [[ ! -f "$STATUS_JSON" ]]; then
+            echo "No committed prior-candidate H100 status JSON yet. This is allowed for prep PRs."
+            exit 0
+          fi
+
+          python3 records/track_10min_16mb/2026-04-29_zamble_final_window_probe/parse_prior_candidate.py
+
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          status_path = Path('records/track_10min_16mb/2026-04-29_zamble_final_window_probe/prior_candidate_h100_status.json')
+          status = json.loads(status_path.read_text())
+          expected = 'prior_candidate_h100_passed'
+          actual = status.get('status')
+          if actual != expected:
+              raise SystemExit(f'evidence status is {actual!r}, expected {expected!r}')
+          if status.get('run_count') != 3:
+              raise SystemExit(f'run_count is {status.get("run_count")!r}, expected 3')
+          if not status.get('has_h100_evidence') or not status.get('has_cuda_evidence'):
+              raise SystemExit('missing H100/CUDA evidence markers')
+          for run in status.get('runs', []):
+              if run.get('val_bpb') is None:
+                  raise SystemExit(f'missing val_bpb in {run.get("path")}')
+              if run.get('artifact_under_16000000') is not True:
+                  raise SystemExit(f'artifact cap failed in {run.get("path")}')
+              if run.get('train_under_600s') is not True:
+                  raise SystemExit(f'train runtime failed in {run.get("path")}')
+              if run.get('eval_under_600s') is not True:
+                  raise SystemExit(f'eval runtime failed in {run.get("path")}')
+          print(json.dumps(status, indent=2, sort_keys=True))
+          PY
+
+          if [[ -f "$FINAL_STATUS" ]]; then
+            grep -q '^final_window_evidence_passed$' "$FINAL_STATUS"
+          fi
+
+          for seed in 42 314 999; do
+            test -s "$CANDIDATE_DIR/fresh_h100_seed${seed}.log"
+          done
