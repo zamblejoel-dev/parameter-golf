@@ -32,6 +32,25 @@ No real Phase 4 metrics exist yet:
 Next required action: run the frozen unmodified base on an actual 1xH100 CUDA
 machine after the environment gate passes.
 
+RunPod MCP orchestration details live in `RUNPOD_PHASE4.md`.
+
+## Phase 4 Local Attempt Evidence (Non-metric)
+
+Date: 2026-04-29
+
+Status: FAIL
+
+Blocker: missing_valid_phase4_h100_debug (still active)
+
+Local failure classification: blocked_by_no_cuda
+
+Fatal line:
+
+`[phase4][fatal] CUDA is not visible to PyTorch.`
+
+Meaning: this machine/session cannot satisfy Phase 4 debug requirements. This is
+not evidence about BPB, artifacts, wallclock, ablations, or architecture.
+
 ## Cloud Environment Gate
 
 Before Phase 4, verify the cloud machine:
